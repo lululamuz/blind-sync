@@ -1,0 +1,14 @@
+{
+  "name": "blind-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BLIND SYNC — a two-player collaborative music game. Create separately. Listen together.",
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "TIME_SCALE=0.25 node server/server.js",
+    "test": "node tests/game.test.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": { "ws": "^8.18.0" }
+}
