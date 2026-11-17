@@ -1,4 +1,4 @@
-import { h, svg, motif, deco, copy, toast, toggle, setText, download, slug, fmtTime } from '../ui/dom.js';
+import { h, svg, motif, deco, copy, toast, toggle, setText, download, slug, fmtTime, fitText } from '../ui/dom.js';
 import { createMelodyGrid, createDrumGrid, createTimeline } from '../ui/sequencer.js';
 import { audio, INSTRUMENT_INFO, KIT_INFO } from '../audio.js';
 import {
@@ -154,7 +154,7 @@ function playerCard(v, slot, isMe) {
       h('span', { class: 'label' }, isMe ? 'YOU' : 'PARTNER'),
       h('span', { class: `presence ${p?.connected === false ? 'off' : 'on'}` }, p?.connected === false ? 'connection lost' : 'connected')),
     h('div', { class: 'pc-name' }, p?.name || (isMe ? 'You' : 'Partner')),
-    h('div', { class: 'pc-role' }, roleTitle(role)),
+    fitText(h('div', { class: 'pc-role' }, roleTitle(role)), { min: 18 }),
     h('p', { class: 'pc-line' }, h('em', {}, roleLine(role))),
     v.ready[slot] ? h('span', { class: 'ready-stamp' }, 'READY!') : null,
     svg(role === 'melody' ? motif.note('var(--lime)') : motif.burst('var(--fuchsia)'), 'pc-icon'));
@@ -262,9 +262,9 @@ export function introScreen(app) {
     h('div', { class: 'intro-inner' },
       h('span', { class: 'kicker sticker' }, `ROUND ${String(v.roundIndex + 1).padStart(2, '0')}${v.roundIndex >= 3 ? ' · BONUS' : ''}`),
       v.prompt
-        ? [h('h1', { class: 'intro-title' }, h('span', { class: 'small-cap' }, 'YOUR PROMPT:'), h('span', { class: 'prompt-word' }, v.prompt)),
+        ? [h('h1', { class: 'intro-title' }, h('span', { class: 'small-cap' }, 'YOUR PROMPT:'), fitText(h('span', { class: 'prompt-word' }, v.prompt))),
           h('p', { class: 'intro-concept serif' }, `What does ${v.prompt.toLowerCase()} sound like to you?`)]
-        : [h('h1', { class: 'intro-title' }, info.title), h('p', { class: 'intro-concept serif' }, info.concept)],
+        : [h('h1', { class: 'intro-title' }, fitText(h('span', {}, info.title))), h('p', { class: 'intro-concept serif' }, info.concept)],
       h('p', { class: `intro-role role-${role}` }, 'You are the ', h('b', {}, roleTitle(role)), ' — ', role === 'melody' ? 'make your melody.' : 'build your beat.'),
       h('p', { class: 'intro-rule' }, info.shared ? 'You can both see and hear everything this round.' : 'Your partner can\'t see or hear what you make until the reveal.'),
       count));
@@ -300,7 +300,7 @@ export function resultsScreen(app) {
     deco('flower', { x: '4%', y: '58%', size: 64, cls: 'spin' }),
     deco('sparkle', { x: '90%', y: '8%', size: 52, fill: 'var(--fuchsia)', cls: 'float' }),
     h('div', { class: 'results-head' },
-      h('h1', { class: 'made' }, 'MADE', h('em', { class: 'serif' }, ' together.')),
+      fitText(h('h1', { class: 'made' }, 'MADE', h('em', { class: 'serif' }, ' together.'))),
       v0.prompt ? h('span', { class: 'chip chip-prompt' }, `PROMPT: ${v0.prompt}`) : h('span', { class: 'chip' }, ROUND_TYPES[v0.roundType].title)),
     h('div', { class: 'results-grid' },
       h('section', { class: 'result-viz sticker-card' },
@@ -359,7 +359,7 @@ export function keepScreen(app) {
     h('div', { class: 'keep-bg halftone-fade' }),
     deco('star', { x: '6%', y: '12%', size: 58, cls: 'spin' }),
     deco('sparkle', { x: '88%', y: '62%', size: 64, fill: 'var(--sky)', cls: 'float' }),
-    h('h1', { class: 'keep-title' }, 'KEEP', h('br'), h('em', { class: 'serif' }, 'creating?')),
+    h('h1', { class: 'keep-title' }, fitText(h('span', {}, 'KEEP')), h('br'), h('em', { class: 'serif' }, 'creating?')),
     opts,
     h('section', { class: 'collection-wrap' }, h('h2', {}, 'This session\'s tracks'), list));
   let playingIdx = null;

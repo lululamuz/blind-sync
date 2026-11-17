@@ -1,4 +1,4 @@
-import { h, svg, motif, deco, reducedMotion, toast } from '../ui/dom.js';
+import { h, svg, motif, deco, reducedMotion, toast, fitText } from '../ui/dom.js';
 import { audio, INSTRUMENT_INFO } from '../audio.js';
 import { parseCompositionJSON, starterMelody, starterDrums, emptyDrums, STEPS } from '../shared/game.js';
 import { ensureSound, takeAudio } from '../main.js';
@@ -55,8 +55,8 @@ export function homeScreen(app) {
       h('div', { class: 'hero-copy' },
         h('p', { class: 'kicker sticker tilt-l' }, 'a two-player music game ✳'),
         h('h1', { class: 'wordmark', 'aria-label': 'BLIND SYNC' },
-          h('span', { class: 'wm-line wm-1' }, 'BLIND'),
-          h('span', { class: 'wm-line wm-2' }, 'SYNC', h('span', { class: 'wm-dot' }, '.')),
+          h('span', { class: 'wm-row' }, fitText(h('span', { class: 'wm-line wm-1' }, 'BLIND'), { min: 48 })),
+          h('span', { class: 'wm-row' }, fitText(h('span', { class: 'wm-line wm-2' }, 'SYNC', h('span', { class: 'wm-dot' }, '.')), { min: 48 })),
           h('span', { class: 'wm-serif' }, 'make music, together')),
         h('p', { class: 'tagline' }, 'Two minds. Two sounds. ', h('em', {}, 'One unexpected composition.')),
         window.BLIND_SYNC_DEMO_ONLY
@@ -70,6 +70,7 @@ export function homeScreen(app) {
           window.BLIND_SYNC_DEMO_ONLY ? null : h('button', { class: 'link-btn', onclick: () => app.startDemo() }, 'Try Local Demo (one screen) →'),
           h('label', { class: 'link-btn', for: 'import-json' }, 'Open a saved track'),
           fileInput)),
+      h('p', { class: 'credit-tag' }, h('span', { class: 'chip' }, 'CoreLabSystems:CT'), 'a creative technology project by ', h('b', {}, 'Lulu')),
       h('div', { class: 'hero-visual' },
         canvas,
         h('span', { class: 'pill pill-melody tilt-r' }, '♪ MELODY'),
@@ -94,14 +95,14 @@ export function homeScreen(app) {
     h('section', { class: 'roles' },
       h('article', { class: 'role-card role-melody' },
         h('div', { class: 'role-top' }, h('span', { class: 'role-tag' }, 'ROLE A'), svg(motif.note('var(--lime)'), 'role-icon')),
-        h('h3', {}, 'MELODY'), h('p', { class: 'role-line' }, h('em', {}, 'Create the tune.')),
+        fitText(h('h3', {}, 'MELODY')), h('p', { class: 'role-line' }, h('em', {}, 'Create the tune.')),
         h('p', {}, 'Five notes, sixteen steps. Higher rows sound higher. Pick from ',
           Object.values(INSTRUMENT_INFO).map(i => i.label).join(', ').replace(/, ([^,]*)$/, ' or $1'), '.'),
         miniMelody, hearMel),
       h('div', { class: 'roles-plus', 'aria-hidden': 'true' }, '+'),
       h('article', { class: 'role-card role-drums' },
         h('div', { class: 'role-top' }, h('span', { class: 'role-tag' }, 'ROLE B'), svg(motif.burst('var(--fuchsia)'), 'role-icon')),
-        h('h3', {}, 'DRUMS'), h('p', { class: 'role-line' }, h('em', {}, 'Make the rhythm.')),
+        fitText(h('h3', {}, 'DRUMS')), h('p', { class: 'role-line' }, h('em', {}, 'Make the rhythm.')),
         h('p', {}, 'BOOM, CLAP and TSS. Stack them, space them out, break the pattern. Three kits to try.'),
         miniDrums, hearDrm),
     ),
@@ -123,12 +124,12 @@ export function homeScreen(app) {
         h('h2', {}, 'About ', h('em', { class: 'serif' }, 'BLIND SYNC')),
         h('p', {}, 'BLIND SYNC is an experiment in collaboration, interpretation and happy accidents. Two people, two screens, one loop. It starts blind, opens up into conversation, and ends with both of you translating the same word into sound.'),
         h('p', {}, 'Every browser makes its own sound from the same shared notes, so nothing is streamed — only ideas travel between you.'),
-        h('p', { class: 'small' }, 'Built with Tone.js, Node.js and WebSockets.')),
+        h('p', { class: 'small' }, 'Designed and built by ', h('b', {}, 'Lulu'), ' for ', h('b', {}, 'CoreLabSystems:CT'), '. Made with Tone.js, Node.js and WebSockets.')),
       svg(motif.arrow(), 'about-arrow'),
     ),
     h('footer', { class: 'footer' },
       h('span', { class: 'wordmark-sm' }, 'BLIND SYNC', h('span', { class: 'dot' }, '.')),
-      h('span', {}, 'A creative technology project — two-player collaborative music game.'),
+      h('span', {}, 'Made by Lulu · CoreLabSystems:CT'),
       h('span', {}, 'Create separately. Listen together.')),
   );
 

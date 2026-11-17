@@ -2,6 +2,8 @@
 
 **Create separately. Listen together.**
 
+A **CoreLabSystems:CT** project by **Lulu**.
+
 BLIND SYNC is a two-player music game that runs in the browser. One player makes the **melody** and the other makes the **drums**. It starts blind, opens up into live collaboration, and ends with both players interpreting the same one-word prompt through sound.
 
 - **Frontend:** plain HTML, CSS and JavaScript ES modules, with no build step. [Tone.js](https://tonejs.github.io/) makes the sound. Hosted on **GitHub Pages**.

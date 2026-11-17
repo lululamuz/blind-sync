@@ -43,6 +43,32 @@ export const fmtTime = ms => {
 };
 export const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/**
+ * Keep a big display word on one line inside its container. The CSS font-size is the
+ * maximum; if the word is wider than the available space (wide fonts like Syne, long
+ * words like NOSTALGIA or "Communicate"), it is scaled down to fit. Returns el.
+ */
+export function fitText(el, { min = 22, pad = 0.96 } = {}) {
+  el.classList.add('fit');
+  const run = () => {
+    if (!el.isConnected) return;
+    el.style.fontSize = '';
+    const box = el.parentElement;
+    const cs = getComputedStyle(box);
+    const avail = (box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) * pad;
+    const max = parseFloat(getComputedStyle(el).fontSize);
+    const w = el.scrollWidth;
+    if (w > avail && avail > 0) el.style.fontSize = Math.max(min, Math.floor(max * avail / w)) + 'px';
+  };
+  const schedule = () => requestAnimationFrame(run);
+  schedule();
+  setTimeout(run, 120);
+  document.fonts?.ready.then(run);
+  const onResize = () => { if (!el.isConnected) window.removeEventListener('resize', onResize); else run(); };
+  window.addEventListener('resize', onResize);
+  return el;
+}
+
 // ---------------------------------------------------------------- motifs
 export const motif = {
   sparkle: (fill = 'var(--lime)') => `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 0 C55 38 62 45 100 50 C62 55 55 62 50 100 C45 62 38 55 0 50 C38 45 45 38 50 0Z" fill="${fill}" stroke="var(--ink)" stroke-width="2.5"/></svg>`,

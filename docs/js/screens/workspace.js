@@ -1,6 +1,6 @@
 // The music workspace. One screen that lives through create → reveal → remix,
 // transforming from a private (solo) editor into the shared two-track editor.
-import { h, svg, motif, toggle, setText, fmtTime, reducedMotion, reactionGlyph, reactionLabel } from '../ui/dom.js';
+import { h, svg, motif, toggle, setText, fmtTime, reducedMotion, reactionGlyph, reactionLabel, fitText } from '../ui/dom.js';
 import { createMelodyGrid, createDrumGrid, createTimeline } from '../ui/sequencer.js';
 import { audio, INSTRUMENT_INFO, KIT_INFO } from '../audio.js';
 import { predict } from '../net.js';
@@ -295,11 +295,11 @@ export function workspaceScreen(app) {
         }[stg] || { melody: true, drums: true, harmony: true });
       }
       ovText.className = `ov-text ov-${stg}`;
-      if (stg === 'timesup') ovText.replaceChildren(h('span', { class: 'big' }, "TIME'S UP."), h('span', { class: 'serif' }, 'Ready to hear what you made?'));
+      if (stg === 'timesup') ovText.replaceChildren(fitText(h('span', { class: 'big' }, "TIME'S UP.")), h('span', { class: 'serif' }, 'Ready to hear what you made?'));
       else if (stg === 'melody') ovText.replaceChildren(h('span', { class: 'tag tag-melody' }, '01 — THE MELODY'), h('span', { class: 'serif' }, `by ${mName}`));
       else if (stg === 'drums') ovText.replaceChildren(h('span', { class: 'tag tag-drums' }, '02 — THE BEAT'), h('span', { class: 'serif' }, `by ${dName}`));
       else if (stg === 'together') {
-        ovText.replaceChildren(h('span', { class: 'big' }, 'TOGETHER.'));
+        ovText.replaceChildren(fitText(h('span', { class: 'big' }, 'TOGETHER.')));
         if (!particlesDone) { particlesDone = true; runParticles(ovCanvas); }
       }
       if (stg === 'done' && app.audioOwner === 'game') audio.setTracks({ melody: true, drums: true, harmony: true });
