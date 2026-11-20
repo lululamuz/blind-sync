@@ -40,6 +40,26 @@ Render's free tier sleeps when idle; the first connection can take ~30 s.
 
 ---
 
+## v1.2 — Simple / Expanded editor
+
+Each player can switch their own editor between **SIMPLE** (the default) and **EXPANDED**. It's a personal view setting: it's saved in that browser, it isn't synced, and the partner doesn't need to agree.
+
+- **Melody, Expanded:** adds **LOW / MID / HIGH** (octaves 3 / 4 / 5 of C D E G A). The selector only changes which five pitches you *see*. Notes are stored as real pitch names (`"C4"`, `"G5"`, `null` = rest), so switching range never transposes or deletes anything. There is still one note per step: tapping another pitch replaces it, tapping the same note removes it.
+  - Small ▲ / ▼ markers under a column mean that step has a note in a higher or lower range. Click one to jump there.
+  - A yellow note shows how many notes in other ranges are still playing.
+  - A dot on LOW / MID / HIGH shows which ranges contain notes.
+- **Drums, Expanded:** reveals **OPEN** (open hi-hat), **TOM** and **SHAKE** below BOOM / CLAP / TSS.
+  - All six rows always play.
+  - In Simple mode, a notice lists any hidden rows that still have hits, with a **Show** button.
+  - Each kit has its own versions of the new sounds: Acoustic (noise hat, membrane tom, band-passed shaker), Electronic (bright hat, pitched 808-style tom, crisp shaker), Soft Percussion (brush swell, high conga, soft tambourine).
+- **Data and compatibility:**
+  - The server checks and syncs every pitch and all six rows, hidden or not.
+  - Blind mode still never sends the partner's track.
+  - Saved JSON is now `version: 2`. Old files (pitch index 0–4, three drum rows) still load: notes land in MID and the new rows start empty.
+  - v1 clients that still send `pitch` indexes are accepted too.
+- The lobby tutorial always uses the Simple view. Results and replay open the extra drum rows automatically when a track uses them.
+
+
 ## Project structure
 
 ```

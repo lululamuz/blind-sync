@@ -3,8 +3,18 @@
 // and the in-browser Local Demo driver. No DOM, no Node APIs.
 
 export const STEPS = 16;
-export const PITCH_COUNT = 5;
-export const DRUM_ROWS = ['boom', 'clap', 'tss'];
+export const PITCH_COUNT = 5; // notes per octave view (C major pentatonic)
+export const SCALE_NAMES = ['C', 'D', 'E', 'G', 'A'];
+export const OCTAVES = { low: 3, mid: 4, high: 5 };
+// Melody notes are stored as real pitch names ('C3' … 'A5'), never as row indexes.
+export const ALL_NOTES = Object.values(OCTAVES).flatMap(o => SCALE_NAMES.map(n => n + o));
+export const noteName = (degree, octave = OCTAVES.mid) => SCALE_NAMES[degree] + octave;
+export const noteDegree = n => (n ? SCALE_NAMES.indexOf(n.slice(0, -1)) : -1);
+export const noteOctave = n => (n ? Number(n.slice(-1)) : null);
+// Simple mode shows the first three rows; Expanded mode reveals all six. All six always play.
+export const BASIC_DRUM_ROWS = ['boom', 'clap', 'tss'];
+export const EXTRA_DRUM_ROWS = ['open', 'tom', 'shake'];
+export const DRUM_ROWS = [...BASIC_DRUM_ROWS, ...EXTRA_DRUM_ROWS];
 export const BPM = 100;
 export const SLOTS = ['A', 'B'];
 
@@ -48,8 +58,21 @@ export const REACTIONS = ['heart', 'spark', 'fire', 'wow'];
 // ---------------------------------------------------------------- factories
 
 export function starterMelody() {
-  // pitch index per step (0 = lowest row), -1 = rest
-  return [2, -1, 3, -1, 4, -1, 3, -1, 2, -1, -1, 1, 0, -1, -1, -1];
+  // one note name per step, null = rest (same tune as v1, in the MID octave)
+  return [2, -1, 3, -1, 4, -1, 3, -1, 2, -1, -1, 1, 0, -1, -1, -1].map(d => (d < 0 ? null : noteName(d)));
+}
+export function emptyMelody() { return Array(STEPS).fill(null); }
+
+/** Accepts v1 data (row index 0–4, -1 = rest) or v1.2 data (note name / null). */
+export function normalizeNote(n) {
+  if (n == null || n === -1 || n === '') return null;
+  if (typeof n === 'number') return n >= 0 && n < PITCH_COUNT ? noteName(n | 0) : null;
+  return ALL_NOTES.includes(n) ? n : null;
+}
+export function normalizePattern(p) {
+  const out = {};
+  for (const r of DRUM_ROWS) out[r] = Array.from({ length: STEPS }, (_, i) => !!(p && p[r] && p[r][i]));
+  return out;
 }
 export function starterDrums() {
   const p = {};
@@ -241,9 +264,12 @@ export function applyAction(room, slot, a, now, opts = {}) {
     case 'editMelody': {
       if (!canEditPhase) return err('Editing is locked');
       if (role !== 'melody') return err('Only the Melody Maker edits the melody');
-      const s = a.step | 0, p = a.pitch | 0;
-      if (s < 0 || s >= STEPS || p < -1 || p >= PITCH_COUNT) return err('Bad note');
-      comp.melody.notes[s] = p;
+      const s = a.step | 0;
+      if (s < 0 || s >= STEPS) return err('Bad step');
+      const raw = 'note' in a ? a.note : a.pitch; // `pitch` = v1 clients
+      const n = normalizeNote(raw);
+      if (raw != null && raw !== -1 && n == null) return err('Bad note');
+      comp.melody.notes[s] = n; // one note per step: a new pitch replaces the old one
       return { ok: true };
     }
     case 'editDrum': {
@@ -269,7 +295,7 @@ export function applyAction(room, slot, a, now, opts = {}) {
     }
     case 'resetTrack': {
       if (!canEditPhase) return err('Editing is locked');
-      if (role === 'melody') comp.melody.notes = a.clear ? Array(STEPS).fill(-1) : starterMelody();
+      if (role === 'melody') comp.melody.notes = a.clear ? emptyMelody() : starterMelody();
       else comp.drums.pattern = a.clear ? emptyDrums() : starterDrums();
       return { ok: true };
     }
@@ -391,7 +417,7 @@ export function viewFor(room, slot, now) {
 export function compositionToJSON(room) {
   return {
     app: 'BLIND SYNC',
-    version: 1,
+    version: 2, // v2: melody notes are pitch names ('E4'), drums have 6 rows
     savedAt: new Date().toISOString(),
     trackName: room.trackName?.trim() || 'Untitled',
     roundType: room.roundType,
@@ -399,7 +425,7 @@ export function compositionToJSON(room) {
     prompt: room.prompt,
     tempo: room.composition.bpm,
     steps: STEPS,
-    settings: { scale: room.composition.scale, harmony: room.composition.harmony, pitchRows: PITCH_COUNT },
+    settings: { scale: room.composition.scale, harmony: room.composition.harmony, octaves: OCTAVES },
     melody: { notes: room.composition.melody.notes, instrument: room.composition.melody.instrument },
     drums: { pattern: room.composition.drums.pattern, kit: room.composition.drums.kit },
   };
@@ -411,7 +437,7 @@ export function parseCompositionJSON(obj) {
   const notes = obj.melody?.notes;
   const pat = obj.drums?.pattern;
   if (!Array.isArray(notes) || notes.length !== STEPS) throw new Error('Melody is missing or the wrong length');
-  if (!pat || !DRUM_ROWS.every(r => Array.isArray(pat[r]) && pat[r].length === STEPS)) throw new Error('Drum pattern is missing');
+  if (!pat || !BASIC_DRUM_ROWS.every(r => Array.isArray(pat[r]) && pat[r].length === STEPS)) throw new Error('Drum pattern is missing');
   return {
     trackName: String(obj.trackName || 'Untitled').slice(0, 40),
     prompt: obj.prompt || null,
@@ -421,11 +447,11 @@ export function parseCompositionJSON(obj) {
       scale: obj.settings?.scale || 'C major pentatonic',
       harmony: obj.settings?.harmony || 'C – Am – F – G',
       melody: {
-        notes: notes.map(n => Math.max(-1, Math.min(PITCH_COUNT - 1, n | 0))),
+        notes: notes.map(normalizeNote), // old files (0–4 / -1) load into the MID octave
         instrument: MELODY_INSTRUMENTS.includes(obj.melody.instrument) ? obj.melody.instrument : 'softKeys',
       },
       drums: {
-        pattern: Object.fromEntries(DRUM_ROWS.map(r => [r, pat[r].map(Boolean)])),
+        pattern: normalizePattern(pat), // old 3-row files get empty OPEN / TOM / SHAKE rows
         kit: DRUM_KITS.includes(obj.drums.kit) ? obj.drums.kit : 'acoustic',
       },
     },

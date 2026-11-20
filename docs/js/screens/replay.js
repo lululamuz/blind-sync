@@ -11,7 +11,7 @@ export function replayScreen(app) {
   const tl = createTimeline();
   const mel = createMelodyGrid({ editable: false });
   const drm = createDrumGrid({ editable: false });
-  mel.set(c.melody.notes); drm.set(c.drums.pattern);
+  mel.set(c.melody.notes); drm.set(c.drums.pattern); drm.autoExpand();
   const offStep = audio.onStep(s => { mel.setPlayhead(s); drm.setPlayhead(s); tl.setPlayhead(s); });
   const playBtn = h('button', { class: 'btn btn-lg btn-fuchsia btn-play' });
   const paint = () => playBtn.replaceChildren(svg(audio.playing ? motif.pause() : motif.play()), audio.playing ? 'Pause' : 'Play track');
@@ -33,7 +33,7 @@ export function replayScreen(app) {
     h('section', { class: 'result-viz sticker-card' },
       h('div', { class: 'tracks' }, tl.el, h('div', { class: 'track track-melody' }, mel.el), h('div', { class: 'track track-drums' }, drm.el))),
     h('div', { class: 'row gap' }, playBtn,
-      h('button', { class: 'btn', onclick: () => download(`blind-sync-${slug(d.trackName)}.json`, { app: 'BLIND SYNC', version: 1, trackName: d.trackName, prompt: d.prompt, roundType: d.roundType, tempo: c.bpm, steps: STEPS, settings: { scale: c.scale, harmony: c.harmony, pitchRows: 5 }, melody: c.melody, drums: c.drums }) }, '↓ Download JSON'),
+      h('button', { class: 'btn', onclick: () => download(`blind-sync-${slug(d.trackName)}.json`, { app: 'BLIND SYNC', version: 2, trackName: d.trackName, prompt: d.prompt, roundType: d.roundType, tempo: c.bpm, steps: STEPS, settings: { scale: c.scale, harmony: c.harmony, octaves: { low: 3, mid: 4, high: 5 } }, melody: c.melody, drums: c.drums }) }, '↓ Download JSON'),
       h('button', { class: 'btn btn-ghost', onclick: () => app.go('home') }, '← Home')));
   return { el, destroy() { offStep(); audio.stop(); } };
 }

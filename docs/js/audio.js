@@ -1,7 +1,7 @@
 // BLIND SYNC — audio engine (Tone.js, loaded globally from CDN as window.Tone).
 // Every browser generates its own sound from the shared composition data.
 
-import { STEPS, DRUM_ROWS } from './shared/game.js';
+import { STEPS, DRUM_ROWS, normalizeNote } from './shared/game.js';
 
 export const PITCH_NOTES = ['C4', 'D4', 'E4', 'G4', 'A4']; // index 0 = lowest row (C major pentatonic)
 export const PITCH_LABELS = ['do', 're', 'mi', 'sol', 'la'];
@@ -21,6 +21,10 @@ export const DRUM_INFO = {
   boom: { label: 'BOOM', hint: 'kick · low' },
   clap: { label: 'CLAP', hint: 'snare · middle' },
   tss: { label: 'TSS', hint: 'hi-hat · high' },
+  // Expanded mode
+  open: { label: 'OPEN', hint: 'open hat · airy' },
+  tom: { label: 'TOM', hint: 'tom · deep' },
+  shake: { label: 'SHAKE', hint: 'shaker · texture' },
 };
 
 // System harmony: a quiet 4-bar progression under the 1-bar player loop.
@@ -32,7 +36,8 @@ const LOOP_SECONDS = (60 / 100) * 4 * 4; // 4 bars at 100 BPM = 9.6 s
 function shift(note, oct) {
   if (!oct) return note;
   const m = note.match(/^([A-G]#?)(\d)$/);
-  return m[1] + (Number(m[2]) + oct);
+  const o = Number(m[2]);
+  return m[1] + (o + oct > 5 ? o : o + oct); // Bright Synth sits an octave up, but never above octave 5
 }
 
 class AudioEngine {
@@ -113,32 +118,50 @@ class AudioEngine {
       snare: noise('white', 0.17, hp(1300), -9),
       body: membrane({ pitchDecay: 0.01, octaves: 1.5, envelope: { attack: 0.001, decay: 0.09, sustain: 0 }, volume: -12 }),
       hat: noise('white', 0.045, hp(7500), -15),
+      open: noise('white', 0.38, hp(6500), -17),
+      tom: membrane({ pitchDecay: 0.02, octaves: 2.5, envelope: { attack: 0.001, decay: 0.32, sustain: 0 }, volume: -5 }),
+      shake: noise('white', 0.06, bp(5200, 0.9), -19, 0.012),
     };
     const el = {
       kick: membrane({ pitchDecay: 0.09, octaves: 7, envelope: { attack: 0.001, decay: 0.85, sustain: 0.02, release: 0.5 }, volume: -1 }),
       clap: noise('pink', 0.2, bp(1500, 1.1), -4),
       hat: noise('white', 0.028, hp(9500), -11),
+      open: noise('white', 0.26, hp(8500), -14),
+      tom: membrane({ pitchDecay: 0.07, octaves: 4, envelope: { attack: 0.001, decay: 0.45, sustain: 0 }, volume: -4 }),
+      shake: noise('pink', 0.05, hp(7000), -13, 0.004),
     };
     const so = {
       conga: membrane({ pitchDecay: 0.012, octaves: 1.6, envelope: { attack: 0.001, decay: 0.32, sustain: 0 }, volume: -6 }),
       wood: new T.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.001, decay: 0.06, sustain: 0, release: 0.03 }, volume: -8 }).connect(reverb),
       shaker: noise('white', 0.07, bp(6500, 0.8), -17, 0.012),
+      brush: noise('white', 0.32, bp(4200, 0.6), -21, 0.03),
+      highConga: membrane({ pitchDecay: 0.01, octaves: 1.4, envelope: { attack: 0.001, decay: 0.22, sustain: 0 }, volume: -8 }),
+      tamb: noise('pink', 0.11, bp(3400, 1.2), -16, 0.02),
     };
     this.kits = {
       acoustic: {
         boom: (t, v) => ac.kick.triggerAttackRelease('C2', '8n', t, v),
         clap: (t, v) => { ac.snare.triggerAttackRelease('16n', t, v); ac.body.triggerAttackRelease('G3', '32n', t, v); },
         tss: (t, v) => ac.hat.triggerAttackRelease('32n', t, v),
+        open: (t, v) => ac.open.triggerAttackRelease('8n', t, v),
+        tom: (t, v) => ac.tom.triggerAttackRelease('A2', '8n', t, v),
+        shake: (t, v) => ac.shake.triggerAttackRelease('32n', t, v),
       },
       electronic: {
         boom: (t, v) => el.kick.triggerAttackRelease('C1', '4n', t, v),
         clap: (t, v) => { [0, 0.011, 0.023].forEach((d, i) => el.clap.triggerAttackRelease(i < 2 ? 0.01 : '16n', t + d, v)); },
         tss: (t, v) => el.hat.triggerAttackRelease('32n', t, v),
+        open: (t, v) => el.open.triggerAttackRelease('8n', t, v),
+        tom: (t, v) => el.tom.triggerAttackRelease('E2', '8n', t, v),
+        shake: (t, v) => el.shake.triggerAttackRelease('32n', t, v),
       },
       soft: {
         boom: (t, v) => so.conga.triggerAttackRelease('G2', '8n', t, v),
         clap: (t, v) => so.wood.triggerAttackRelease('E5', '32n', t, v),
         tss: (t, v) => so.shaker.triggerAttackRelease('32n', t, v),
+        open: (t, v) => so.brush.triggerAttackRelease('8n', t, v),
+        tom: (t, v) => so.highConga.triggerAttackRelease('D3', '8n', t, v),
+        shake: (t, v) => so.tamb.triggerAttackRelease('16n', t, v),
       },
     };
 
@@ -176,13 +199,14 @@ class AudioEngine {
       }
     }
     if (c?.melody && this.trackOn.melody) {
-      const p = c.melody.notes[step];
-      if (p >= 0) this._melodyNote(c.melody.instrument, p, time, 0.85);
+      const n = normalizeNote(c.melody.notes[step]);
+      if (n) this._melodyNote(c.melody.instrument, n, time, 0.85);
     }
     if (c?.drums && this.trackOn.drums) {
       const kit = this.kits[c.drums.kit] || this.kits.acoustic;
       for (const r of DRUM_ROWS) {
-        if (c.drums.pattern[r][step]) kit[r](time, r === 'tss' ? (step % 4 === 0 ? 0.9 : 0.55) : 0.95);
+        // every row plays, including OPEN / TOM / SHAKE when they are hidden in Simple mode
+        if (c.drums.pattern[r]?.[step]) kit[r](time, r === 'tss' || r === 'shake' ? (step % 4 === 0 ? 0.9 : 0.55) : 0.95);
       }
     }
     T.Draw.schedule(() => {
@@ -191,9 +215,9 @@ class AudioEngine {
     }, time);
   }
 
-  _melodyNote(instrument, pitch, time, vel = 0.85) {
+  _melodyNote(instrument, noteName, time, vel = 0.85) {
     const inst = this.inst[instrument] || this.inst.softKeys;
-    const note = shift(PITCH_NOTES[pitch], OCTAVE_SHIFT[instrument] || 0);
+    const note = shift(noteName, OCTAVE_SHIFT[instrument] || 0);
     const dur = instrument === 'dreamy' ? '4n' : '8n';
     try { inst.triggerAttackRelease(note, dur, time, vel); } catch (e) { /* overlapping retrigger: ignore */ }
   }
@@ -242,9 +266,10 @@ class AudioEngine {
     this._emitState();
   }
 
-  previewMelody(pitch, instrument) {
-    if (!this.started || this.muted || pitch < 0) return;
-    this._melodyNote(instrument, pitch, Tone.now() + 0.01, 0.8);
+  previewMelody(note, instrument) {
+    const n = normalizeNote(note);
+    if (!this.started || this.muted || !n) return;
+    this._melodyNote(instrument, n, Tone.now() + 0.01, 0.8);
   }
   previewDrum(row, kit) {
     if (!this.started || this.muted) return;
@@ -253,7 +278,7 @@ class AudioEngine {
   previewInstrument(instrument) {
     if (!this.started || this.muted) return;
     const t = Tone.now() + 0.02;
-    [0, 2, 4].forEach((p, i) => this._melodyNote(instrument, p, t + i * 0.13, 0.75));
+    ['C4', 'E4', 'A4'].forEach((n, i) => this._melodyNote(instrument, n, t + i * 0.13, 0.75));
   }
   previewKit(kit) {
     if (!this.started || this.muted) return;

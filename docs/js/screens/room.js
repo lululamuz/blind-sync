@@ -3,6 +3,7 @@ import { createMelodyGrid, createDrumGrid, createTimeline } from '../ui/sequence
 import { audio, INSTRUMENT_INFO, KIT_INFO } from '../audio.js';
 import {
   ROUND_TYPES, otherSlot, compositionToJSON, starterMelody, starterDrums, STEPS, MELODY_INSTRUMENTS, DRUM_KITS,
+  normalizeNote, normalizePattern,
 } from '../shared/game.js';
 import { ensureSound, takeAudio, setUserPaused } from '../main.js';
 
@@ -188,15 +189,16 @@ function swapControl(app, v) {
 function tutorialBlock(app) {
   let open = false, playing = false, role = 'melody';
   const comp = {
-    melody: { notes: [0, -1, 2, -1, 4, -1, -1, -1, 3, -1, 2, -1, -1, -1, -1, -1], instrument: 'softKeys' },
-    drums: { pattern: { boom: Array(STEPS).fill(false).map((_, i) => i % 8 === 0), clap: Array(STEPS).fill(false).map((_, i) => i === 4 || i === 12), tss: Array(STEPS).fill(false) }, kit: 'acoustic' },
+    melody: { notes: [0, -1, 2, -1, 4, -1, -1, -1, 3, -1, 2, -1, -1, -1, -1, -1].map(normalizeNote), instrument: 'softKeys' },
+    drums: { pattern: normalizePattern({ boom: Array(STEPS).fill(false).map((_, i) => i % 8 === 0), clap: Array(STEPS).fill(false).map((_, i) => i === 4 || i === 12), tss: Array(STEPS).fill(false) }), kit: 'acoustic' },
   };
+  // The tutorial always uses the Simple view.
   const mel = createMelodyGrid({
-    editable: true,
-    onToggle: (s, p) => { comp.melody.notes[s] = p; mel.set(comp.melody.notes); audio.previewMelody(p, comp.melody.instrument); tick('note'); },
+    editable: true, controls: false,
+    onToggle: (s, n) => { comp.melody.notes[s] = n; mel.set(comp.melody.notes); audio.previewMelody(n, comp.melody.instrument); tick('note'); },
   });
   const drm = createDrumGrid({
-    editable: true,
+    editable: true, controls: false,
     onToggle: (r, s, on) => { comp.drums.pattern[r][s] = on; drm.set(comp.drums.pattern); if (on) audio.previewDrum(r, comp.drums.kit); tick('note'); },
   });
   mel.set(comp.melody.notes); drm.set(comp.drums.pattern);
@@ -324,7 +326,7 @@ export function resultsScreen(app) {
 
   function update() {
     const v = app.state, me = v.you, ot = otherSlot(me);
-    mel.set(v.composition.melody.notes); drm.set(v.composition.drums.pattern);
+    mel.set(v.composition.melody.notes); drm.set(v.composition.drums.pattern); drm.autoExpand();
     const mSlot = v.roles.A === 'melody' ? 'A' : 'B';
     credits.replaceChildren('Melody by ', h('b', {}, nameOf(v, mSlot)), ` · ${INSTRUMENT_INFO[v.composition.melody.instrument].label}`, h('br'),
       'Drums by ', h('b', {}, nameOf(v, otherSlot(mSlot))), ` · ${KIT_INFO[v.composition.drums.kit].label}`);
@@ -396,10 +398,10 @@ export function keepScreen(app) {
 
 function saveEntry(c) {
   download(`blind-sync-${slug(c.name)}.json`, {
-    app: 'BLIND SYNC', version: 1, savedAt: new Date().toISOString(),
+    app: 'BLIND SYNC', version: 2, savedAt: new Date().toISOString(),
     trackName: c.name, roundType: c.roundType, round: c.round, prompt: c.prompt, players: c.players,
     tempo: c.composition.bpm, steps: STEPS,
-    settings: { scale: c.composition.scale, harmony: c.composition.harmony, pitchRows: 5 },
+    settings: { scale: c.composition.scale, harmony: c.composition.harmony, octaves: { low: 3, mid: 4, high: 5 } },
     melody: c.composition.melody, drums: c.composition.drums,
   });
 }

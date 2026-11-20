@@ -10,7 +10,7 @@ const EDIT_TYPES = new Set(['editMelody', 'editDrum', 'setInstrument', 'setKit']
 /** Apply an optimistic edit to a view (client-side prediction). */
 export function predict(view, a) {
   const c = view.composition;
-  if (a.type === 'editMelody' && c.melody) c.melody.notes[a.step] = a.pitch;
+  if (a.type === 'editMelody' && c.melody) c.melody.notes[a.step] = a.note ?? null;
   if (a.type === 'editDrum' && c.drums) c.drums.pattern[a.row][a.step] = a.on;
   if (a.type === 'setInstrument' && c.melody) c.melody.instrument = a.instrument;
   if (a.type === 'setKit' && c.drums) c.drums.kit = a.kit;

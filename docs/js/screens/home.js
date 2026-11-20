@@ -1,6 +1,6 @@
 import { h, svg, motif, deco, reducedMotion, toast, fitText } from '../ui/dom.js';
 import { audio, INSTRUMENT_INFO } from '../audio.js';
-import { parseCompositionJSON, starterMelody, starterDrums, emptyDrums, STEPS } from '../shared/game.js';
+import { parseCompositionJSON, starterMelody, starterDrums, emptyDrums, emptyMelody, noteDegree, STEPS } from '../shared/game.js';
 import { ensureSound, takeAudio } from '../main.js';
 
 export function homeScreen(app) {
@@ -30,7 +30,7 @@ export function homeScreen(app) {
       takeAudio('local');
       audio.setComposition(which === 'melody'
         ? { melody: { notes: starterMelody(), instrument: 'softKeys' }, drums: { pattern: emptyDrums(), kit: 'acoustic' } }
-        : { melody: { notes: Array(STEPS).fill(-1), instrument: 'softKeys' }, drums: { pattern: starterDrums(), kit: 'electronic' } });
+        : { melody: { notes: emptyMelody(), instrument: 'softKeys' }, drums: { pattern: starterDrums(), kit: 'electronic' } });
       audio.setTracks({ melody: true, drums: true, harmony: true });
       audio.play();
       demoPlaying = which;
@@ -41,7 +41,7 @@ export function homeScreen(app) {
   const hearDrm = h('button', { class: 'btn btn-sm btn-hear', onclick: hearExample('drums', () => hearDrm) }, svg(motif.play()), 'Hear a beat');
 
   const miniMelody = h('div', { class: 'mini-grid mini-melody', 'aria-hidden': 'true' },
-    starterMelody().map((p, i) => h('span', { class: p >= 0 ? 'on' : '', style: { '--p': p } })));
+    starterMelody().map(n => h('span', { class: n ? 'on' : '', style: { '--p': noteDegree(n) } })));
   const miniDrums = h('div', { class: 'mini-grid mini-drums', 'aria-hidden': 'true' },
     ['boom', 'clap', 'tss'].map(r => h('div', {}, starterDrums()[r].map(on => h('span', { class: on ? `on d-${r}` : '' })))));
 

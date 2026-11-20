@@ -32,7 +32,9 @@ export function workspaceScreen(app) {
   const sub = h('p', { class: 'ws-sub' });
   const tracks = h('div', { class: 'tracks' });
   const pickers = h('div', { class: 'pickers' });
-  const stage = h('section', { class: 'ws-stage' }, h('div', { class: 'ws-head' }, title, sub), tracks, pickers);
+  // Shared mode (Round 2, remix): reset tools for your own track. Solo mode keeps them in the side panel.
+  const trackTools = h('div', { class: 'track-tools' });
+  const stage = h('section', { class: 'ws-stage' }, h('div', { class: 'ws-head' }, title, sub), tracks, trackTools, pickers);
   const side = h('aside', { class: 'ws-side' });
   const foot = h('div', { class: 'ws-foot' });
   const reactLayer = h('div', { class: 'react-layer', 'aria-hidden': 'true' });
@@ -79,7 +81,7 @@ export function workspaceScreen(app) {
     const owner = slotOf(v, role);
     const isMine = owner === v.you;
     const grid = role === 'melody'
-      ? createMelodyGrid({ onToggle: (step, pitch) => { edit({ type: 'editMelody', step, pitch }); if (pitch >= 0) audio.previewMelody(pitch, app.state.composition.melody.instrument); } })
+      ? createMelodyGrid({ onToggle: (step, note) => { edit({ type: 'editMelody', step, note }); if (note) audio.previewMelody(note, app.state.composition.melody.instrument); } })
       : createDrumGrid({ onToggle: (row, step, on) => { edit({ type: 'editDrum', row, step, on }); if (on) audio.previewDrum(row, app.state.composition.drums.kit); } });
     grids[role] = grid;
     const sound = h('span', { class: 'track-sound' });
@@ -184,6 +186,19 @@ export function workspaceScreen(app) {
       if (focusedIdx >= 0) pickers.querySelectorAll('button')[focusedIdx]?.focus();
     }
     toggle(pickers, 'compact', editableRoles.length > 1);
+
+    const showTools = mode === 'shared' && ['create', 'remix'].includes(v.phase);
+    const toolSig = showTools ? editableRoles.join(',') : '';
+    if (toolSig !== trackTools.dataset.sig) {
+      trackTools.dataset.sig = toolSig;
+      trackTools.replaceChildren(...(showTools ? editableRoles.map(r => {
+        const what = r === 'melody' ? 'melody' : 'drums';
+        return h('div', { class: `track-tools-row tt-${r}` },
+          h('span', { class: 'picker-label' }, app.demo ? `${what}:` : `Your ${what}:`),
+          h('button', { class: 'btn btn-sm', onclick: () => app.act({ type: 'resetTrack', role: r }) }, '↺ Starter pattern'),
+          h('button', { class: 'btn btn-sm btn-ghost', onclick: () => app.act({ type: 'resetTrack', clear: true, role: r }) }, 'Clear grid'));
+      }) : []));
+    }
 
     // side + foot
     if (mode === 'solo') {

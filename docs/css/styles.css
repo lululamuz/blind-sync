@@ -667,3 +667,49 @@ body.no-audio .btn-sound { opacity: .5; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
+
+/* =====================================================================
+   v1.2 — Simple / Expanded editor
+   ===================================================================== */
+.seq-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0 0 8px; min-height: 30px; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; border: var(--line); border-radius: 999px; background: var(--white); }
+.seg-btn {
+  position: relative; border: 0; border-radius: 999px; padding: 4px 11px; background: transparent; cursor: pointer;
+  font: 700 11px var(--f-ui); letter-spacing: .1em; transition: background .15s, color .15s, transform .15s var(--ease);
+}
+.seg-btn:hover { background: var(--limonade); }
+.seg-btn[aria-pressed="true"] { background: var(--ink); color: var(--lime); }
+.seg-oct .seg-btn[aria-pressed="true"] { background: var(--grad-melody); color: var(--white); }
+.seg-oct .seg-btn.has-notes::after { content: ''; position: absolute; top: 2px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--fuchsia); border: 1px solid var(--ink); }
+.seg-oct .seg-btn[aria-pressed="true"].has-notes::after { background: var(--lime); }
+.hidden-notice { display: inline-flex; align-items: center; gap: 8px; margin: 0; font: 500 12px var(--f-ui); padding: 3px 10px; border-radius: 999px; background: var(--butter); border: 1px dashed var(--ink); }
+.hidden-notice .link-btn { font-size: 12px; font-weight: 700; padding: 0; }
+.pitch-oct { font-size: 9px; font-weight: 500; opacity: .55; margin-left: -4px; transform: translateY(4px); }
+
+/* ▲ / ▼ markers: a step holds a note in a higher / lower range */
+.oct-row { height: 0; overflow: hidden; transition: height .2s; }
+.oct-row.has-marks { height: 13px; }
+.grid-row > .oct-mark.beat:not(:nth-child(2)) { margin-left: 6px; }
+.oct-mark { border: 0; padding: 0; background: none; font-size: 9px; line-height: 13px; color: var(--indigo); cursor: pointer; text-align: center; }
+.oct-mark.up { color: var(--fuchsia); }
+.oct-mark:empty { cursor: default; }
+.oct-mark.hit { transform: scale(1.5); }
+
+/* extra drum rows */
+.dcell.d-open.on { background: var(--sky); }
+.dcell.d-open.on::after { width: 18px; height: 18px; border-radius: 50%; border: 3px solid var(--ink); background: transparent; }
+.dcell.d-tom.on { background: var(--butter); }
+.dcell.d-tom.on::after { width: 20px; height: 14px; border-radius: 6px; background: var(--ink); }
+.dcell.d-shake.on { background: #FFC2DF; }
+.dcell.d-shake.on::after { width: 18px; height: 18px; background: radial-gradient(circle, var(--ink) 2.2px, transparent 2.6px) 0 0 / 6px 6px; }
+.extra-row { animation: unfold .45s var(--ease) both; }
+.extra-row .drum-label b { color: #3B2A00; }
+.seq-drums.expanded .grid-row:nth-child(4) { border-top: 1px dashed rgba(28,28,28,.3); padding-top: 5px; }
+@media (max-width: 640px) {
+  .grid-row > .oct-mark.beat:not(:nth-child(2)) { margin-left: 3px; }
+  .seg-btn { padding: 4px 8px; }
+}
+.track-tools { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 12px; }
+.track-tools:empty { display: none; }
+.track-tools-row { display: flex; align-items: center; gap: 8px; }
+.track-tools-row .picker-label { width: auto; }
